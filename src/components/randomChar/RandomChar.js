@@ -1,50 +1,37 @@
-import { Component } from 'react';
+import { Component, useEffect, useState } from 'react';
 import ErrorMessage from '../errorMessage/ErrorMessage';
 import Spinner from '../spinner/Spinner'
-import MarvelService from '../../services/MarvelService';
+import useMarvelService from '../../services/MarvelService';
 import './randomChar.scss';
 import mjolnir from '../../resources/img/mjolnir.png';
 
-class RandomChar extends Component{
+const RandomChar = (props) => {
 
-    constructor(props){
-        super(props);
-        this.updateCharacter();
+    const [ char , setChar] = useState({});
+ 
+    const {error , loading , getCharacter ,clearError} =  useMarvelService();
+
+    const onCharLoaded = (char) => {
+        setChar(char);
     }
 
-    state = {
-        char : {},
-        loading: true
-    }
+    useEffect(() => {
+        updateCharacter();
+        const timerId = setInterval(() => {
+            updateCharacter();
+        }, 10000);
 
-    onCharLoaded = (char) => {
-        this.setState({
-            char,
-            loading: false,
-            error : false
-        });
-    }
+        return () => {
+            clearInterval(timerId)
+        }
+    },[])
 
-    onError = () =>{
-        this.setState({
-            loading : false,
-            error : true
-        })
-    }
-
-    marvelService = new MarvelService();
-    
-
-    updateCharacter = () => {
+    const updateCharacter = () => {
+        clearError();
         const id = Math.floor(Math.random() * 400 + 1011000)
-        this.marvelService
-        .getCharacter(id)
-        .then(this.onCharLoaded)
-        .catch(this.onError)    
+        getCharacter(id).then(onCharLoaded);
     }
-
-    render(){
-        const { char , loading , error} = this.state;
+   
         const errorMessage = error ? <ErrorMessage /> : null;
         const spinner = loading ? < Spinner /> : null;
         const content = !(loading || error) ? < View char={char} /> : null;
@@ -62,31 +49,35 @@ class RandomChar extends Component{
                     <p className="randomchar__title">
                         Or choose another one
                     </p>
-                    <button className="button button__main">
+                    <button onClick={updateCharacter} className="button button__main">
                         <div className="inner">try it</div>
                     </button>
                     <img src={mjolnir} alt="mjolnir" className="randomchar__decoration"/>
                 </div>
             </div>
         )
-    }
+    
 }
 
 const View = ({char}) =>{
     const { name , description , wikiBtn , homeBtn , image } = char;
     let alterDesc;
+    let styleImage = { 'objectFit' : 'cover' };
 
     if(description != undefined && description.length === 0 ){
-        console.log(description.length)
         alterDesc =  "Movcud deil !";
     }else{
         alterDesc = description;
     }
 
+    if(char.image === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg'){
+        styleImage = { 'objectFit' : 'contain' }
+    }
+
 
     return(
         <div className="randomchar__block">
-        <img src={image} alt="Random character" className="randomchar__img"/>
+        <img src={image} alt="Random character" style={styleImage} className="randomchar__img"/>
         <div className="randomchar__info">
             <p className="randomchar__name">{name}</p>
             <p className="randomchar__descr">
